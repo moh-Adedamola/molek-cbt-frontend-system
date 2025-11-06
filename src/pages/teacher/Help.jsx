@@ -36,7 +36,7 @@ const TeacherHelp = () => {
 
       {/* Quick Links */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        
+        <a
           href="#question-creation"
           className="card flex items-center gap-3 transition-colors hover:bg-gray-50"
         >
@@ -46,7 +46,7 @@ const TeacherHelp = () => {
             <p className="text-sm text-gray-600">How to create questions</p>
           </div>
         </a>
-        
+        <a
           href="#bulk-upload"
           className="card flex items-center gap-3 transition-colors hover:bg-gray-50"
         >
@@ -56,7 +56,7 @@ const TeacherHelp = () => {
             <p className="text-sm text-gray-600">Upload multiple questions</p>
           </div>
         </a>
-        
+        <a
           href="#best-practices"
           className="card flex items-center gap-3 transition-colors hover:bg-gray-50"
         >

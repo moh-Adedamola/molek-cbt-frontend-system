@@ -280,12 +280,12 @@ const TakeExam = () => {
 
       // In production:
       // const response = await sessionService.submitSession(payload);
-      
+
       // Mock delay
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       showAlert('success', 'Exam submitted successfully!');
-      
+
       setTimeout(() => {
         navigate('/student/results');
       }, 2000);
@@ -398,13 +398,12 @@ const TakeExam = () => {
 
             {/* Timer */}
             <div
-              className={`flex items-center gap-2 rounded-lg border-2 px-4 py-2 ${
-                timeRemaining <= exam.duration_minutes * 6
+              className={`flex items-center gap-2 rounded-lg border-2 px-4 py-2 ${timeRemaining <= exam.duration_minutes * 6
                   ? 'border-red-500 bg-red-50'
                   : timeRemaining <= exam.duration_minutes * 15
-                  ? 'border-orange-500 bg-orange-50'
-                  : 'border-gray-300 bg-white'
-              }`}
+                    ? 'border-orange-500 bg-orange-50'
+                    : 'border-gray-300 bg-white'
+                }`}
             >
               <Clock className="h-5 w-5" />
               <span className={`text-xl font-bold ${getTimerColor()}`}>
@@ -463,15 +462,18 @@ const TakeExam = () => {
               {/* Question Text */}
               <div className="mb-8 rounded-lg bg-blue-50 p-6">
                 <p className="text-xl leading-relaxed text-gray-900">
-                  {currentQuestion.question_text}
+                  {currentQuestion.question_text || currentQuestion.questionText || 'Question text not available'}
                 </p>
               </div>
 
               {/* Options */}
               <div className="space-y-4">
                 {['A', 'B', 'C', 'D'].map((option) => {
-                  const optionKey = `option_${option.toLowerCase()}`;
-                  const optionText = currentQuestion[optionKey];
+                  // Try both snake_case and camelCase
+                  const optionKeySnake = `option_${option.toLowerCase()}`;
+                  const optionKeyCamel = `option${option}`;
+                  const optionText = currentQuestion[optionKeySnake] || currentQuestion[optionKeyCamel];
+
                   if (!optionText) return null;
 
                   const isSelected = currentAnswer === option;
@@ -480,19 +482,17 @@ const TakeExam = () => {
                     <button
                       key={option}
                       onClick={() => handleAnswerSelect(currentQuestion.id, option)}
-                      className={`group w-full rounded-lg border-2 p-6 text-left transition-all ${
-                        isSelected
+                      className={`group w-full rounded-lg border-2 p-6 text-left transition-all ${isSelected
                           ? 'border-blue-600 bg-blue-50 shadow-md'
                           : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-gray-50'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start gap-4">
                         <div
-                          className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 font-bold transition-all ${
-                            isSelected
+                          className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 font-bold transition-all ${isSelected
                               ? 'border-blue-600 bg-blue-600 text-white'
                               : 'border-gray-300 bg-white text-gray-600 group-hover:border-blue-600'
-                          }`}
+                            }`}
                         >
                           {option}
                         </div>
@@ -580,15 +580,14 @@ const TakeExam = () => {
                     <button
                       key={index}
                       onClick={() => handleQuestionClick(index)}
-                      className={`aspect-square rounded-lg border-2 text-sm font-semibold transition-all ${
-                        isCurrent
+                      className={`aspect-square rounded-lg border-2 text-sm font-semibold transition-all ${isCurrent
                           ? 'border-blue-600 bg-blue-600 text-white'
                           : status === 'answered'
-                          ? 'border-green-500 bg-green-500 text-white hover:bg-green-600'
-                          : status === 'review'
-                          ? 'border-orange-500 bg-orange-500 text-white hover:bg-orange-600'
-                          : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
-                      }`}
+                            ? 'border-green-500 bg-green-500 text-white hover:bg-green-600'
+                            : status === 'review'
+                              ? 'border-orange-500 bg-orange-500 text-white hover:bg-orange-600'
+                              : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
+                        }`}
                     >
                       {index + 1}
                     </button>

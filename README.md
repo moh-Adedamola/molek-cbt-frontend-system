@@ -1,16 +1,82 @@
-# React + Vite
+# Molek CBT System - Computer-Based Testing Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A comprehensive, full-stack Computer-Based Testing (CBT) platform built for educational institutions.
 
-Currently, two official plugins are available:
+## 🎯 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Admin Portal
+- Complete user management (Admins, Teachers, Students)
+- Subject and class management
+- Comprehensive question bank with bulk upload
+- Exam creation with multi-step wizard
+- Real-time exam monitoring
+- Results management and analytics
+- System settings and audit logs
 
-## React Compiler
+### Teacher Portal
+- Question management with Excel/Word import
+- Exam creation and publishing
+- Class results viewing and analytics
+- Performance tracking
+- Profile management
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Student Portal
+- Browse available exams
+- Take exams with real-time timer
+- Auto-save functionality
+- View results and performance
+- Exam review with explanations
 
-## Expanding the ESLint configuration
+## 🛠️ Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Backend
+- **Runtime:** Node.js
+- **Framework:** Express.js
+- **Database:** PostgreSQL
+- **Authentication:** JWT (JSON Web Tokens)
+- **Password Hashing:** bcrypt
+- **Validation:** Joi
+- **File Upload:** Multer
+- **Excel Processing:** xlsx, exceljs
+- **Word Processing:** mammoth
+
+### Frontend
+- **Framework:** React 
+- **Build Tool:** Vite
+- **Routing:** React Router v6
+- **State Management:** Zustand
+- **HTTP Client:** Axios
+- **UI Components:** Custom components with Tailwind CSS
+- **Styling:** Tailwind CSS
+- **Icons:** Lucide React
+- **Charts:** Recharts
+- **Utilities:** clsx, date-fns
+
+## 📦 Installation
+
+### Prerequisites
+- Node.js (v16 or higher)
+- PostgreSQL 
+- npm or yarn
+
+
+## 🔐 Security Features
+
+- JWT-based authentication
+- Password hashing with bcrypt
+- Role-based access control
+- SQL injection prevention
+- XSS protection
+- CORS configuration
+- Rate limiting
+- Input validation
+
+## 🗺️ Roadmap
+
+- [ ] Mobile app (React Native)
+- [ ] Advanced analytics with AI
+- [ ] Video proctoring
+- [ ] Integration with LMS platforms
+- [ ] Multi-language support
+- [ ] Offline exam capability
+

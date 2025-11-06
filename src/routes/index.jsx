@@ -69,6 +69,18 @@ export const router = createBrowserRouter([
     ),
   },
 
+  // ⭐ FULL-SCREEN ROUTES (No Layout/Sidebar)
+  {
+    path: '/student/exam/:examId',
+    element: (
+      <ProtectedRoute allowedRoles={['student']}>
+        <LazyLoad>
+          <TakeExam />
+        </LazyLoad>
+      </ProtectedRoute>
+    ),
+  },
+
   // Protected routes with layout
   {
     path: '/',
@@ -332,16 +344,7 @@ export const router = createBrowserRouter([
               </ProtectedRoute>
             ),
           },
-          {
-            path: 'exam/:examId',
-            element: (
-              <ProtectedRoute allowedRoles={['student']}>
-                <LazyLoad>
-                  <TakeExam />
-                </LazyLoad>
-              </ProtectedRoute>
-            ),
-          },
+          // ✅ Exam route removed from here - now defined outside Layout
           {
             path: 'results',
             element: (
@@ -373,3 +376,4 @@ export const router = createBrowserRouter([
     element: <Navigate to="/login" replace />,
   },
 ]);
+     
