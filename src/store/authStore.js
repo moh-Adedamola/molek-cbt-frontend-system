@@ -13,15 +13,15 @@ export const useAuthStore = create((set, get) => ({
   login: async (credentials) => {
     set({ loading: true, error: null });
     try {
+      console.log('🔐 Store login called with:', { ...credentials, password: '***' });
+
       const response = await authService.login(credentials);
-      
-      console.log('Login response:', response); // DEBUG
-      
-      // The API client already extracts response.data
-      // So response is actually { success, message, data: { user, token, ... } }
-      
+
+      console.log('📥 Login response:', response);
+
+      // Extract token and user from response
       let token, user;
-      
+
       if (response.data) {
         // Structure: { data: { user, token } }
         token = response.data.token || response.data.accessToken;
@@ -31,14 +31,16 @@ export const useAuthStore = create((set, get) => ({
         token = response.token || response.accessToken;
         user = response.user;
       } else {
-        console.error('Unexpected response structure:', response);
+        console.error('❌ Unexpected response structure:', response);
         throw new Error('Invalid response from server');
       }
 
       if (!token || !user) {
-        console.error('Missing token or user:', { token: !!token, user: !!user });
+        console.error('❌ Missing token or user:', { token: !!token, user: !!user });
         throw new Error('Invalid response from server');
       }
+
+      console.log('✅ Token and user extracted successfully');
 
       // Save to localStorage
       setToken(token);
@@ -53,9 +55,11 @@ export const useAuthStore = create((set, get) => ({
         error: null,
       });
 
+      console.log('✅ Store updated successfully');
+
       return { success: true };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ Store login error:', error);
       set({
         error: error.message || 'Login failed',
         loading: false,
@@ -97,7 +101,7 @@ export const useAuthStore = create((set, get) => ({
     try {
       const response = await authService.me();
       console.log('Me response:', response); // DEBUG
-      
+
       let user;
       if (response.data?.user) {
         user = response.data.user;

@@ -3,7 +3,7 @@ import { getToken, removeToken } from '../utils/storage';
 
 // Create axios instance
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_URL,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -17,9 +17,18 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Debug log
+    console.log('📤 API Request:', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      hasToken: !!token,
+    });
+    
     return config;
   },
   (error) => {
+    console.error('❌ Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -27,9 +36,20 @@ apiClient.interceptors.request.use(
 // Response interceptor - Handle errors globally
 apiClient.interceptors.response.use(
   (response) => {
+    console.log('📥 API Response:', {
+      status: response.status,
+      url: response.config.url,
+    });
+    
     return response.data; // Return only data
   },
   (error) => {
+    console.error('❌ API Error:', {
+      status: error.response?.status,
+      url: error.config?.url,
+      message: error.response?.data?.message,
+    });
+    
     // Handle specific error cases
     if (error.response) {
       const { status, data } = error.response;
@@ -52,7 +72,7 @@ apiClient.interceptors.response.use(
           console.error('Server error');
           break;
         default:
-          console.error('API Error:', data.message || 'Something went wrong');
+          console.error('API Error:', data?.message || 'Something went wrong');
       }
 
       return Promise.reject(data);

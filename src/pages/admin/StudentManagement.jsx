@@ -1,5 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Upload, Download, GraduationCap, Users, Search } from 'lucide-react';
+import { 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Upload, 
+  Download, 
+  GraduationCap, 
+  Users, 
+  Search,
+  Copy,
+  CheckCircle,
+  Printer,
+  Hash,
+  Key,
+} from 'lucide-react';
 import Table from '../../components/common/Table';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
@@ -22,7 +36,9 @@ const StudentManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isCredentialsModalOpen, setIsCredentialsModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [generatedCredentials, setGeneratedCredentials] = useState(null);
   const [alert, setAlert] = useState(null);
   const [stats, setStats] = useState({
     total: 0,
@@ -37,10 +53,11 @@ const StudentManagement = () => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    email: '',
     classLevel: '',
     gender: '',
     dateOfBirth: '',
+    parentPhone: '',
+    parentEmail: '',
   });
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -48,6 +65,7 @@ const StudentManagement = () => {
   // Bulk upload state
   const [uploadFile, setUploadFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [bulkUploadResults, setBulkUploadResults] = useState(null);
 
   useEffect(() => {
     loadStudents();
@@ -84,6 +102,7 @@ const StudentManagement = () => {
 
   const showAlert = (type, message) => {
     setAlert({ type, message });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleOpenModal = (student = null) => {
@@ -92,20 +111,22 @@ const StudentManagement = () => {
       setFormData({
         firstName: student.first_name || student.firstName,
         lastName: student.last_name || student.lastName,
-        email: student.email || '',
         classLevel: student.class_level || student.classLevel,
         gender: student.gender || '',
         dateOfBirth: student.date_of_birth || student.dateOfBirth || '',
+        parentPhone: student.parent_phone || student.parentPhone || '',
+        parentEmail: student.parent_email || student.parentEmail || '',
       });
     } else {
       setSelectedStudent(null);
       setFormData({
         firstName: '',
         lastName: '',
-        email: '',
         classLevel: '',
         gender: '',
         dateOfBirth: '',
+        parentPhone: '',
+        parentEmail: '',
       });
     }
     setFormErrors({});
@@ -118,10 +139,11 @@ const StudentManagement = () => {
     setFormData({
       firstName: '',
       lastName: '',
-      email: '',
       classLevel: '',
       gender: '',
       dateOfBirth: '',
+      parentPhone: '',
+      parentEmail: '',
     });
     setFormErrors({});
   };
@@ -129,16 +151,12 @@ const StudentManagement = () => {
   const validateForm = () => {
     const errors = {};
 
-    if (!formData.firstName) {
+    if (!formData.firstName?.trim()) {
       errors.firstName = 'First name is required';
     }
 
-    if (!formData.lastName) {
+    if (!formData.lastName?.trim()) {
       errors.lastName = 'Last name is required';
-    }
-
-    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Email is invalid';
     }
 
     if (!formData.classLevel) {
@@ -164,21 +182,31 @@ const StudentManagement = () => {
       const payload = {
         first_name: formData.firstName,
         last_name: formData.lastName,
-        email: formData.email || undefined,
         class_level: formData.classLevel,
         gender: formData.gender,
         date_of_birth: formData.dateOfBirth || undefined,
+        parent_phone: formData.parentPhone || undefined,
+        parent_email: formData.parentEmail || undefined,
       };
 
       if (selectedStudent) {
         await studentService.update(selectedStudent.id || selectedStudent.student_id, payload);
         showAlert('success', 'Student updated successfully');
+        handleCloseModal();
       } else {
-        await studentService.create(payload);
+        // Create new student
+        const response = await studentService.create(payload);
+        
+        // Check if credentials were returned
+        if (response.data?.credentials) {
+          setGeneratedCredentials(response.data.credentials);
+          setIsCredentialsModalOpen(true);
+        }
+        
         showAlert('success', 'Student created successfully');
+        handleCloseModal();
       }
 
-      handleCloseModal();
       loadStudents();
     } catch (error) {
       showAlert('error', error.message || 'Failed to save student');
@@ -237,19 +265,23 @@ const StudentManagement = () => {
       setUploading(true);
       const response = await studentService.bulkUpload(uploadFile);
       
-      const successCount = response.data?.success_count || response.data?.successCount || 0;
-      const errorCount = response.data?.error_count || response.data?.errorCount || 0;
+      const results = response.data;
+      const successCount = results?.success?.length || 0;
+      const errorCount = results?.failed?.length || 0;
+
+      // Store results for displaying credentials
+      setBulkUploadResults(results);
 
       if (errorCount > 0) {
         showAlert(
           'warning',
-          `Uploaded ${successCount} students successfully. ${errorCount} failed. Check console for details.`
+          `Uploaded ${successCount} students successfully. ${errorCount} failed.`
         );
       } else {
         showAlert('success', `Successfully uploaded ${successCount} students`);
       }
 
-      setIsBulkUploadModalOpen(false);
+      // Keep modal open to show credentials
       setUploadFile(null);
       loadStudents();
     } catch (error) {
@@ -259,13 +291,31 @@ const StudentManagement = () => {
     }
   };
 
+  const handleCopyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    showAlert('success', 'Copied to clipboard!');
+  };
+
+  const handlePrintCredentials = () => {
+    window.print();
+  };
+
   const columns = [
+    {
+      key: 'examNumber',
+      label: 'Exam Number',
+      render: (value, row) => (
+        <span className="font-mono font-semibold text-blue-600">
+          {row.exam_number || row.examNumber || '-'}
+        </span>
+      ),
+    },
     {
       key: 'admissionNumber',
       label: 'Admission No',
       render: (value, row) => (
-        <span className="font-mono font-semibold text-blue-600">
-          {row.admission_number || row.admissionNumber}
+        <span className="font-mono text-gray-600">
+          {row.admission_number || row.admissionNumber || '-'}
         </span>
       ),
     },
@@ -275,13 +325,13 @@ const StudentManagement = () => {
       render: (value, row) => {
         const firstName = row.first_name || row.firstName;
         const lastName = row.last_name || row.lastName;
-        return `${firstName} ${lastName}`;
+        return (
+          <div>
+            <div className="font-medium text-gray-900">{`${firstName} ${lastName}`}</div>
+            <div className="text-sm text-gray-500">{row.email || '-'}</div>
+          </div>
+        );
       },
-    },
-    {
-      key: 'email',
-      label: 'Email',
-      render: (value) => value || '-',
     },
     {
       key: 'classLevel',
@@ -402,7 +452,8 @@ const StudentManagement = () => {
             type="text"
             value={filters.search}
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-            placeholder="Search by name or admission number..."
+            placeholder="Search by name or exam number..."
+            icon={Search}
           />
           <div className="flex items-end">
             <Button
@@ -434,6 +485,14 @@ const StudentManagement = () => {
         size="md"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
+          {!selectedStudent && (
+            <div className="rounded-lg bg-blue-50 p-4">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> Exam number and password will be auto-generated for the student.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="First Name"
@@ -455,15 +514,6 @@ const StudentManagement = () => {
             />
           </div>
 
-          <Input
-            label="Email (Optional)"
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            error={formErrors.email}
-            placeholder="student@example.com"
-          />
-
           <div className="grid grid-cols-2 gap-4">
             <Select
               label="Class Level"
@@ -480,8 +530,8 @@ const StudentManagement = () => {
               onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
               error={formErrors.gender}
               options={[
-                { value: 'male', label: 'Male' },
-                { value: 'female', label: 'Female' },
+                { value: 'Male', label: 'Male' },
+                { value: 'Female', label: 'Female' },
               ]}
               placeholder="Select gender"
               required
@@ -489,11 +539,28 @@ const StudentManagement = () => {
           </div>
 
           <Input
-            label="Date of Birth (Optional)"
+            label="Date of Birth"
             type="date"
             value={formData.dateOfBirth}
             onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
           />
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Parent Phone"
+              type="tel"
+              value={formData.parentPhone}
+              onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })}
+              placeholder="+234..."
+            />
+            <Input
+              label="Parent Email"
+              type="email"
+              value={formData.parentEmail}
+              onChange={(e) => setFormData({ ...formData, parentEmail: e.target.value })}
+              placeholder="parent@example.com"
+            />
+          </div>
 
           <div className="flex justify-end gap-3 pt-4">
             <Button
@@ -505,10 +572,118 @@ const StudentManagement = () => {
               Cancel
             </Button>
             <Button type="submit" loading={submitting}>
-              {selectedStudent ? 'Update Student' : 'Add Student'}
+              {selectedStudent ? 'Update Student' : 'Create Student'}
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Credentials Modal */}
+      <Modal
+        isOpen={isCredentialsModalOpen}
+        onClose={() => {
+          setIsCredentialsModalOpen(false);
+          setGeneratedCredentials(null);
+        }}
+        title="Student Credentials Created"
+        size="md"
+      >
+        {generatedCredentials && (
+          <div className="space-y-6">
+            {/* Success Message */}
+            <div className="rounded-lg bg-green-50 p-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="h-6 w-6 flex-shrink-0 text-green-600" />
+                <div>
+                  <h4 className="font-semibold text-green-900">Student Account Created!</h4>
+                  <p className="mt-1 text-sm text-green-800">
+                    Please save these credentials and provide them to the student.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Student Info */}
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <h4 className="mb-2 font-semibold text-gray-900">Student Information</h4>
+              <p className="text-gray-700">
+                <strong>Name:</strong> {generatedCredentials.full_name}
+              </p>
+            </div>
+
+            {/* Credentials Card */}
+            <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-6">
+              <div className="mb-4 text-center">
+                <h3 className="text-lg font-bold text-gray-900">Login Credentials</h3>
+                <p className="text-sm text-gray-600">Save this information securely</p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <Hash className="h-4 w-4" />
+                    Exam Number:
+                  </label>
+                  <div className="flex items-center justify-between rounded-lg bg-white p-3">
+                    <code className="text-lg font-bold text-blue-600">
+                      {generatedCredentials.exam_number}
+                    </code>
+                    <button
+                      onClick={() => handleCopyToClipboard(generatedCredentials.exam_number)}
+                      className="text-blue-600 hover:text-blue-700"
+                      title="Copy"
+                    >
+                      <Copy className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <Key className="h-4 w-4" />
+                    Password:
+                  </label>
+                  <div className="flex items-center justify-between rounded-lg bg-white p-3">
+                    <code className="text-lg font-bold text-gray-900">
+                      {generatedCredentials.password}
+                    </code>
+                    <button
+                      onClick={() => handleCopyToClipboard(generatedCredentials.password)}
+                      className="text-blue-600 hover:text-blue-700"
+                      title="Copy"
+                    >
+                      <Copy className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-lg bg-yellow-50 p-3">
+                <p className="text-xs text-yellow-800">
+                  <strong>Important:</strong> The student can change their password after first login.
+                  This password will not be shown again.
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="secondary"
+                onClick={handlePrintCredentials}
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                Print
+              </Button>
+              <Button onClick={() => {
+                setIsCredentialsModalOpen(false);
+                setGeneratedCredentials(null);
+              }}>
+                Done
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* Bulk Upload Modal */}
@@ -517,17 +692,19 @@ const StudentManagement = () => {
         onClose={() => {
           setIsBulkUploadModalOpen(false);
           setUploadFile(null);
+          setBulkUploadResults(null);
         }}
         title="Bulk Upload Students"
-        size="md"
+        size="lg"
       >
         <div className="space-y-4">
           <div className="rounded-lg bg-blue-50 p-4">
             <h4 className="font-medium text-blue-900">Instructions:</h4>
             <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-blue-800">
               <li>Download the Excel template</li>
-              <li>Fill in student information</li>
+              <li>Fill in student information (first name, last name, class, etc.)</li>
               <li>Upload the completed file</li>
+              <li>Exam numbers and passwords will be auto-generated</li>
             </ol>
           </div>
 
@@ -557,6 +734,49 @@ const StudentManagement = () => {
             )}
           </div>
 
+          {/* Show Upload Results */}
+          {bulkUploadResults && (
+            <div className="max-h-96 space-y-3 overflow-y-auto rounded-lg border border-gray-200 p-4">
+              <h4 className="font-semibold text-gray-900">Upload Results:</h4>
+              
+              {/* Success List */}
+              {bulkUploadResults.success?.length > 0 && (
+                <div className="rounded-lg bg-green-50 p-3">
+                  <h5 className="mb-2 font-medium text-green-900">
+                    ✅ Successfully Created ({bulkUploadResults.success.length})
+                  </h5>
+                  <div className="max-h-48 space-y-2 overflow-y-auto text-sm">
+                    {bulkUploadResults.success.map((item, index) => (
+                      <div key={index} className="rounded border border-green-200 bg-white p-2">
+                        <p className="font-medium text-gray-900">{item.full_name}</p>
+                        <p className="text-gray-600">
+                          <strong>Exam No:</strong> {item.exam_number} | 
+                          <strong> Password:</strong> {item.password}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Failed List */}
+              {bulkUploadResults.failed?.length > 0 && (
+                <div className="rounded-lg bg-red-50 p-3">
+                  <h5 className="mb-2 font-medium text-red-900">
+                    ❌ Failed ({bulkUploadResults.failed.length})
+                  </h5>
+                  <div className="max-h-48 space-y-2 overflow-y-auto text-sm">
+                    {bulkUploadResults.failed.map((item, index) => (
+                      <div key={index} className="rounded border border-red-200 bg-white p-2">
+                        <p className="text-red-800">{item.reason}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex justify-end gap-3 pt-4">
             <Button
               type="button"
@@ -564,12 +784,17 @@ const StudentManagement = () => {
               onClick={() => {
                 setIsBulkUploadModalOpen(false);
                 setUploadFile(null);
+                setBulkUploadResults(null);
               }}
               disabled={uploading}
             >
-              Cancel
+              Close
             </Button>
-            <Button onClick={handleBulkUpload} loading={uploading} disabled={!uploadFile}>
+            <Button 
+              onClick={handleBulkUpload} 
+              loading={uploading} 
+              disabled={!uploadFile || bulkUploadResults}
+            >
               Upload Students
             </Button>
           </div>
